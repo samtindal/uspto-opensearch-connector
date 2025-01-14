@@ -1,4 +1,4 @@
-# USPTO OpenSearch Client Wrapper
+# USPTO OpenSearch Connector
 
 ## Overview
 
@@ -77,15 +77,15 @@ This project provides an encapsulated client wrapper for interacting with the US
 
 ## Usage
 
-To interact with the OpenSearch index, instantiate the `OpenSearchClient` and use its methods to query or insert data.
+To interact with the OpenSearch index, instantiate the `UsptoOpenSearchConnector` and use its methods to query or insert data.
 
 ### Example:
 
 ```python
-from opensearch_wrapper import OpenSearchClient
+from opensearch_wrapper import UsptoOpenSearchConnector
 
 # Initialize the client
-opensearch_client = OpenSearchClient(index_name="uspto_patents", region="us-east-1")
+opensearch_client = UsptoOpenSearchConnector(index_name="uspto_patents", region="us-east-1")
 
 # Connect to OpenSearch
 opensearch_client.connect()
