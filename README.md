@@ -25,7 +25,6 @@ The API methods are exposed via **Amazon API Gateway**, with compute provided by
 - [Architecture](#architecture)
 - [API Endpoints](#api-endpoints)
 - [Methods](#methods)
-- [License](#license)
 
 ---
 
@@ -90,7 +89,31 @@ This application is built around the following components:
 
 ## Class Diagram
 
-LambdaHandler
-  ├── GetRelatedRecordIdsActivity
-  └── GetRecordDetailsActivity
-        └── OpenSearchClientWrapper
+```plantuml
+@startuml
+class LambdaHandler {
+    - getRelatedIds: GetRelatedRecordIdsActivity
+    - getRecordDetails: GetRecordDetailsActivity
+}
+
+class GetRelatedRecordIdsActivity {
+    - osClient: OpenSearchClientWrapper
+    + execute(query: String): List<String>
+}
+
+class GetRecordDetailsActivity {
+    - osClient: OpenSearchClientWrapper
+    + execute(recordId: String): Record
+}
+
+class OpenSearchClientWrapper {
+    - executeQuery(query: String): List<String>
+    - fetchDetails(recordId: String): Record
+}
+
+LambdaHandler --> GetRelatedRecordIdsActivity
+LambdaHandler --> GetRecordDetailsActivity
+GetRelatedRecordIdsActivity --> OpenSearchClientWrapper
+GetRecordDetailsActivity --> OpenSearchClientWrapper
+@enduml
+
