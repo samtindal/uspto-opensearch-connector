@@ -29,20 +29,6 @@ The **USPTO OpenSearch Connector** is a read-only service designed to interface 
 - **`getRelatedRecordIds(query: String)`**: Executes a query to fetch related record IDs.
 - **`getRecordDetails(recordIds: List<String>)`**: Retrieves details for the specified record IDs.
 
-## Prerequisites
-
-Before using the **USPTO OpenSearch Connector**, ensure the following:
-
-1. **AWS Credentials**:
-   - The calling application must assume an IAM role with permissions to access the OpenSearch domain and execute the necessary API calls.
-
-2. **OpenSearch Domain**:
-   - The endpoint of the OpenSearch domain you want to connect to (e.g., `https://search-uspto-patents-domain.us-east-1.es.amazonaws.com`).
-
-3. **Java Development Environment**:
-   - JDK 17 or higher.
-   - Maven or Gradle for dependency management.
-
 ## Installation
 
 ### Maven
