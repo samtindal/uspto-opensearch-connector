@@ -4,6 +4,10 @@
 
 The **USPTO OpenSearch Connector** is a read-only service designed to interface with the USPTO OpenSearch data store hosted on AWS. It simplifies querying and retrieving patent-related data using the AWS OpenSearch SDK, managing endpoint configuration and credential details within the wrapper itself. API permissions are enforced via IAM roles assumed by the calling application.
 
+This client wrapper also handles pre-processing of record details retrieved from USPTO and is written in Java strong-typing support. The calling application is recommended to be written in Python, R or other language for data processing.
+
+API methods will be hosted on API Gateway with compute on AWS Lambda.
+
 ## Features
 
 - **Read-only Access**: Query and retrieve data from OpenSearch without modifying or indexing records.
@@ -11,10 +15,6 @@ The **USPTO OpenSearch Connector** is a read-only service designed to interface 
 - **Fetch Record Details**: Retrieve detailed information for records using their unique identifiers.
 - **AWS OpenSearch SDK Integration**: Utilizes the AWS SDK for OpenSearch to ensure secure and efficient operations.
 - **IAM Role-based Access**: API permissions are managed by IAM roles assumed by the calling application.
-
-This client wrapper also handles pre-processing of record details retrieved from USPTO and is written in Java strong-typing support. The calling application is recommended to be written in Python, R or other language for data processing.
-
-API methods will be hosted on API Gateway with compute on AWS Lambda.
 
 ## Components
 
