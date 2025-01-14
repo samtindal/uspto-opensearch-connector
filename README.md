@@ -25,40 +25,47 @@ The API methods are exposed via **Amazon API Gateway**, with compute provided by
 - [Architecture](#architecture)
 - [API Endpoints](#api-endpoints)
 - [Methods](#methods)
+- [License](#license)
 
 ---
 
 ## Architecture 🏗️
 
-The **USPTO OpenSearch Connector** is designed around the following components:
+This application is built around the following components:
 
 1. **Lambda Handler**  
-   - Acts as the entry point for API Gateway requests.  
-   - Routes requests to the appropriate activity class based on the requested method.
+   - The entry point for API Gateway requests.  
+   - Routes requests to the appropriate activity class based on the invoked method.
 
-2. **API Gateway**  
-   - Serves as the interface for users to interact with the Lambda function.  
-   - Routes requests to the Lambda Handler based on HTTP methods and resource paths.
+2. **Activity Classes**  
+   - `GetRelatedRecordIdsActivity`: Handles retrieving related record IDs using a query string.  
+   - `GetRecordDetailsActivity`: Handles fetching record details using a record ID.
 
-3. **IAM Role-Based Access**: 
+3. **Logging**  
+   - Uses **SLF4J** for structured and efficient logging within all components.  
+   - Logs are sent to **AWS CloudWatch** for centralized storage and monitoring.
+
+4. **API Gateway**  
+   - The interface for users to interact with the Lambda function.  
+   - Routes HTTP requests to the Lambda Handler.
+
+5. **IAM Role-Based Access**: 
    - API permissions are managed by IAM roles assumed by the calling application.
 
 ---
 
 ## API Endpoints 🌐
 
-The application exposes two endpoints:
-
 1. **`GET /getRelatedRecordIds`**  
-   - Query Parameters:  
+   - **Query Parameters**:  
      - `query` (string): The search query string to retrieve related record IDs.  
-   - Response:  
+   - **Response**:  
      - A list of related record IDs.
 
 2. **`GET /getRecordDetails`**  
-   - Query Parameters:  
+   - **Query Parameters**:  
      - `recordId` (string): The ID of the record to fetch details for.  
-   - Response:  
+   - **Response**:  
      - The details of the specified record.
 
 ---
@@ -81,7 +88,9 @@ The application exposes two endpoints:
 - **Output**:  
   - A JSON object with the details of the requested record.
 
-## Features
+## Class Diagram
 
-- **Read-only Access**: Query and retrieve data from OpenSearch without modifying or indexing records.
-- **AWS OpenSearch SDK Integration**: Utilizes the AWS SDK for OpenSearch to ensure secure and efficient operations.
+LambdaHandler
+  ├── GetRelatedRecordIdsActivity
+  └── GetRecordDetailsActivity
+        └── OpenSearchClientWrapper
