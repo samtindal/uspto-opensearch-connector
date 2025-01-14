@@ -2,45 +2,40 @@
 
 ## Overview
 
-This project provides an encapsulated client wrapper for interacting with the USPTO OpenSearch data store. The wrapper abstracts the complexities of directly interacting with OpenSearch, allowing users to query related records and retrieve detailed data in a simple and business-friendly manner.
+The **USPTO OpenSearch Connector** is a read-only service designed to interface with the USPTO OpenSearch data store. This service allows users to query and retrieve patent-related data from the OpenSearch index. It abstracts the complexities of directly interacting with OpenSearch and limits the blast radius of connection and business logic issues to the client wrapper itself.
+
+## Features
+
+- **Read-only**: The service is designed solely for querying and retrieving data from OpenSearch, with no capability to modify or index records.
+- **Query Related Records**: Execute queries to identify related patent records based on search criteria.
+- **Fetch Record Details**: Retrieve detailed information for records using their unique identifiers.
+- **Cluster Monitoring**: Monitor the health and status of the OpenSearch cluster.
 
 ## Components
 
-### `OpenSearchClient`
+### `USPTOOpenSearchConnector`
 - **Purpose**: The primary interface for interacting with the USPTO OpenSearch data store.
 - **Responsibilities**:
   - Establish and manage the connection to OpenSearch.
-  - Provide methods for querying and inserting data into OpenSearch.
+  - Provide methods for querying data from OpenSearch.
   
 #### Methods:
 - `connect()`: Establishes the connection to OpenSearch.
 - `disconnect()`: Closes the connection to OpenSearch.
 - `queryData()`: Executes a query to retrieve data from OpenSearch.
-- `insertData()`: Inserts new data into OpenSearch.
 - `queryRelatedRecords(query: str)`: Queries for related records based on a query string and returns a list of record IDs.
 - `getRecordDetails(record_ids: List[str])`: Accepts a list of record IDs and returns detailed information for each record.
 
 ### `DataRetriever`
-- **Purpose**: Responsible for retrieving data from OpenSearch based on queries.
+- **Purpose**: Responsible for executing queries and retrieving related records.
 - **Responsibilities**:
-  - Executes queries to retrieve data and fetch related records by their IDs.
-  
+  - Executes queries to retrieve data and find related records by their IDs.
+
 #### Methods:
 - `executeQuery()`: Runs the query and returns matching results.
 - `filterResults()`: Applies additional filtering criteria on retrieved data.
 - `queryRelatedRecords(query: str)`: Queries OpenSearch to find related records and returns their IDs.
 - `getRecordDetails(record_ids: List[str])`: Fetches details for a list of record IDs.
-
-### `DataIndexer`
-- **Purpose**: Responsible for indexing documents in OpenSearch.
-- **Responsibilities**:
-  - Insert new documents into OpenSearch.
-  - Update or delete existing documents.
-
-#### Methods:
-- `indexDocument()`: Indexes a new document into OpenSearch.
-- `updateDocument()`: Updates an existing document.
-- `deleteDocument()`: Deletes a document from OpenSearch.
 
 ### `OpenSearchManager`
 - **Purpose**: Manages OpenSearch cluster metadata and health.
@@ -51,24 +46,23 @@ This project provides an encapsulated client wrapper for interacting with the US
 #### Methods:
 - `monitorCluster()`: Monitors the status of the OpenSearch cluster.
 - `getClusterInfo()`: Retrieves cluster metadata such as node health and index status.
-- `updateCluster()`: Updates configurations or settings for the OpenSearch cluster.
+- `updateCluster()`: Retrieves configurations or settings for the OpenSearch cluster.
 
 ### `ErrorHandler`
-- **Purpose**: Handles errors and provides retry mechanisms.
+- **Purpose**: Handles errors and logs issues for read-only operations.
 - **Responsibilities**:
-  - Manages retries for failed OpenSearch operations.
-  - Logs errors for debugging and operational monitoring.
+  - Manages errors that occur during queries or data retrieval.
 
 #### Methods:
-- `handleError()`: Handles errors during data retrieval or insertion.
-- `retry()`: Retries failed operations.
-- `logError()`: Logs detailed error information for future analysis.
+- `handleError()`: Handles errors during data retrieval.
+- `retry()`: Retries failed read operations.
+- `logError()`: Logs error details for future analysis.
 
 ### `Logger`
 - **Purpose**: Logs events, information, and errors for debugging and auditing purposes.
 - **Responsibilities**:
-  - Track system events and operational information.
-  - Log errors and provide insights into system performance.
+  - Tracks system events and operational information.
+  - Logs errors for system monitoring.
 
 #### Methods:
 - `logEvent()`: Logs an event that occurred within the system.
@@ -77,27 +71,27 @@ This project provides an encapsulated client wrapper for interacting with the US
 
 ## Usage
 
-To interact with the OpenSearch index, instantiate the `UsptoOpenSearchConnector` and use its methods to query or insert data.
+To interact with the OpenSearch index, instantiate the `USPTOOpenSearchConnector` and use its methods to query or retrieve data.
 
 ### Example:
 
 ```python
-from opensearch_wrapper import UsptoOpenSearchConnector
+from uspto_opensearch_connector import USPTOOpenSearchConnector
 
-# Initialize the client
-opensearch_client = UsptoOpenSearchConnector(index_name="uspto_patents", region="us-east-1")
+# Initialize the connector
+connector = USPTOOpenSearchConnector(index_name="uspto_patents", region="us-east-1")
 
 # Connect to OpenSearch
-opensearch_client.connect()
+connector.connect()
 
 # Query for related records by keyword
 query = "patent"
-record_ids = opensearch_client.queryRelatedRecords(query)
+record_ids = connector.queryRelatedRecords(query)
 print(f"Related Record IDs: {record_ids}")
 
 # Fetch details for related records
-records = opensearch_client.getRecordDetails(record_ids)
+records = connector.getRecordDetails(record_ids)
 print(f"Record Details: {records}")
 
 # Disconnect
-opensearch_client.disconnect()
+connector.disconnect()
