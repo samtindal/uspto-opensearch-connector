@@ -103,12 +103,12 @@ class GetRelatedRecordIdsActivity {
 
 class GetRecordDetailsActivity {
     - osClient: OpenSearchClientWrapper
-    + execute(recordId: String): Record
+    + execute(recordId: String): UsptoRecord
 }
 
 class OpenSearchClientWrapper {
     - executeQuery(query: String): List<String>
-    - fetchDetails(recordId: String): Record
+    - fetchDetails(recordId: String): UsptoRecord
 }
 
 LambdaHandler --> GetRelatedRecordIdsActivity

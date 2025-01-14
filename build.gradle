@@ -1,47 +1,43 @@
 plugins {
-    id("java")
-    id("org.jetbrains.kotlin.jvm") version "1.8.21"
+    id 'java'
+    id 'application'
 }
 
-group = "com.uspto.opensearch"
-version = "1.0.0"
+group = 'com.samtindal.usptoconnector'
+version = '1.0-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21) // Use Java 21
+    }
+}
 
 repositories {
     mavenCentral()
 }
 
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21)) // Use Java 21 LTS
-    }
-}
-
 dependencies {
-    // AWS SDK for OpenSearch
-    implementation("software.amazon.awssdk:opensearch:2.20.6")
+    // SLF4J for logging
+    implementation 'org.slf4j:slf4j-api:2.0.9'
+    implementation 'ch.qos.logback:logback-classic:1.4.11' // Logback as the SLF4J backend
 
-    // Logging with SLF4J and Logback
-    implementation("org.slf4j:slf4j-api:1.7.32")
-    implementation("ch.qos.logback:logback-classic:1.2.11")
+    // AWS SDK for Lambda and CloudWatch
+    implementation 'com.amazonaws:aws-lambda-java-core:1.2.3'
+    implementation 'com.amazonaws:aws-lambda-java-events:3.11.0'
+    implementation 'com.amazonaws:aws-lambda-java-log4j2:1.5.1'
 
-    // Unit Testing with JUnit 5
-    testImplementation("org.junit.jupiter:junit-jupiter:5.9.3")
+    // HTTP Client for USPTO OpenSearch API communication
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.1'
 
-    // Mocking with Mockito
-    testImplementation("org.mockito:mockito-core:4.11.0")
-    testImplementation("org.mockito.kotlin:mockito-kotlin:4.1.0")
+    // JUnit for testing
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
 }
 
-tasks {
-    test {
-        useJUnitPlatform() // Enable JUnit 5
-    }
+application {
+    // Define the main class
+    mainClass = 'com.samtindal.usptoconnector.LambdaHandler'
+}
 
-    compileKotlin {
-        kotlinOptions.jvmTarget = "21" // Set Kotlin to target Java 21
-    }
-
-    compileTestKotlin {
-        kotlinOptions.jvmTarget = "21" // Set Kotlin test compilation to target Java 21
-    }
+tasks.test {
+    useJUnitPlatform()
 }
