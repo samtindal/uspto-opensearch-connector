@@ -2,96 +2,68 @@
 
 ## Overview
 
-The **USPTO OpenSearch Connector** is a read-only service designed to interface with the USPTO OpenSearch data store. This service allows users to query and retrieve patent-related data from the OpenSearch index. It abstracts the complexities of directly interacting with OpenSearch and limits the blast radius of connection and business logic issues to the client wrapper itself.
+The **USPTO OpenSearch Connector** is a read-only service designed to interface with the USPTO OpenSearch data store hosted on AWS. It simplifies querying and retrieving patent-related data using the AWS OpenSearch SDK, managing endpoint configuration and credential details within the wrapper itself. API permissions are enforced via IAM roles assumed by the calling application.
 
 ## Features
 
-- **Read-only**: The service is designed solely for querying and retrieving data from OpenSearch, with no capability to modify or index records.
-- **Query Related Records**: Execute queries to identify related patent records based on search criteria.
+- **Read-only Access**: Query and retrieve data from OpenSearch without modifying or indexing records.
+- **Query Related Records**: Retrieve related record IDs based on a query string.
 - **Fetch Record Details**: Retrieve detailed information for records using their unique identifiers.
-- **Cluster Monitoring**: Monitor the health and status of the OpenSearch cluster.
+- **AWS OpenSearch SDK Integration**: Utilizes the AWS SDK for OpenSearch to ensure secure and efficient operations.
+- **IAM Role-based Access**: API permissions are managed by IAM roles assumed by the calling application.
 
 ## Components
 
-### `USPTOOpenSearchConnector`
-- **Purpose**: The primary interface for interacting with the USPTO OpenSearch data store.
-- **Responsibilities**:
-  - Establish and manage the connection to OpenSearch.
-  - Provide methods for querying data from OpenSearch.
-  
-#### Methods:
-- `connect()`: Establishes the connection to OpenSearch.
-- `disconnect()`: Closes the connection to OpenSearch.
-- `queryData()`: Executes a query to retrieve data from OpenSearch.
-- `queryRelatedRecords(query: str)`: Queries for related records based on a query string and returns a list of record IDs.
-- `getRecordDetails(record_ids: List[str])`: Accepts a list of record IDs and returns detailed information for each record.
+### Key Responsibilities
 
-### `DataRetriever`
-- **Purpose**: Responsible for executing queries and retrieving related records.
-- **Responsibilities**:
-  - Executes queries to retrieve data and find related records by their IDs.
+1. **Client Wrapper**:
+   - Manages endpoint configuration and credential knowledge required for the OpenSearch client.
+   - Abstracts the complexities of interacting with the OpenSearch SDK.
 
-#### Methods:
-- `executeQuery()`: Runs the query and returns matching results.
-- `filterResults()`: Applies additional filtering criteria on retrieved data.
-- `queryRelatedRecords(query: str)`: Queries OpenSearch to find related records and returns their IDs.
-- `getRecordDetails(record_ids: List[str])`: Fetches details for a list of record IDs.
+2. **Data Retrieval**:
+   - Query for related records based on a search term.
+   - Fetch detailed information for specific record IDs.
 
-### `OpenSearchManager`
-- **Purpose**: Manages OpenSearch cluster metadata and health.
-- **Responsibilities**:
-  - Monitor the health of the OpenSearch cluster and individual nodes.
-  - Retrieve and update cluster information.
+### High-Level Methods
 
-#### Methods:
-- `monitorCluster()`: Monitors the status of the OpenSearch cluster.
-- `getClusterInfo()`: Retrieves cluster metadata such as node health and index status.
-- `updateCluster()`: Retrieves configurations or settings for the OpenSearch cluster.
+- **`getRelatedRecordIds(query: String)`**: Executes a query to fetch related record IDs.
+- **`getRecordDetails(recordIds: List<String>)`**: Retrieves details for the specified record IDs.
 
-### `ErrorHandler`
-- **Purpose**: Handles errors and logs issues for read-only operations.
-- **Responsibilities**:
-  - Manages errors that occur during queries or data retrieval.
+## Prerequisites
 
-#### Methods:
-- `handleError()`: Handles errors during data retrieval.
-- `retry()`: Retries failed read operations.
-- `logError()`: Logs error details for future analysis.
+Before using the **USPTO OpenSearch Connector**, ensure the following:
 
-### `Logger`
-- **Purpose**: Logs events, information, and errors for debugging and auditing purposes.
-- **Responsibilities**:
-  - Tracks system events and operational information.
-  - Logs errors for system monitoring.
+1. **AWS Credentials**:
+   - The calling application must assume an IAM role with permissions to access the OpenSearch domain and execute the necessary API calls.
 
-#### Methods:
-- `logEvent()`: Logs an event that occurred within the system.
-- `logError()`: Logs error details and stack traces.
-- `logInfo()`: Logs general information messages for monitoring.
+2. **OpenSearch Domain**:
+   - The endpoint of the OpenSearch domain you want to connect to (e.g., `https://search-uspto-patents-domain.us-east-1.es.amazonaws.com`).
 
-## Usage
+3. **Java Development Environment**:
+   - JDK 17 or higher.
+   - Maven or Gradle for dependency management.
 
-To interact with the OpenSearch index, instantiate the `USPTOOpenSearchConnector` and use its methods to query or retrieve data.
+## Installation
 
-### Example:
+### Maven
 
-```python
-from uspto_opensearch_connector import USPTOOpenSearchConnector
+Add the following dependencies to your `pom.xml`:
 
-# Initialize the connector
-connector = USPTOOpenSearchConnector(index_name="uspto_patents", region="us-east-1")
-
-# Connect to OpenSearch
-connector.connect()
-
-# Query for related records by keyword
-query = "patent"
-record_ids = connector.queryRelatedRecords(query)
-print(f"Related Record IDs: {record_ids}")
-
-# Fetch details for related records
-records = connector.getRecordDetails(record_ids)
-print(f"Record Details: {records}")
-
-# Disconnect
-connector.disconnect()
+```xml
+<dependencies>
+    <dependency>
+        <groupId>software.amazon.awssdk</groupId>
+        <artifactId>opensearch</artifactId>
+        <version>2.17.112</version>
+    </dependency>
+    <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>1.7.32</version>
+    </dependency>
+    <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-classic</artifactId>
+        <version>1.2.6</version>
+    </dependency>
+</dependencies>
