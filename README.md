@@ -1,2 +1,2 @@
 # kinesis-client-wrapper
-Encapsulated client wrapper for retrieving records from the public USPTO Kinesis data store.
+Encapsulated client wrapper for retrieving records from Kinesis data store.
