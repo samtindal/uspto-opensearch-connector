@@ -1,3 +1,5 @@
+// Licensed under the MIT License. See LICENSE file for details.
+
 package test.java.com.samtindal.usptoconnector.activities;
 
 import org.junit.jupiter.api.BeforeEach;

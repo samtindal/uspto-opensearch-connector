@@ -1,3 +1,5 @@
+// Licensed under the MIT License. See LICENSE file for details.
+
 package main.java.com.samtindal.usptoconnector.client;
 
 import org.slf4j.Logger;

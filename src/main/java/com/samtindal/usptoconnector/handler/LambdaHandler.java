@@ -1,3 +1,5 @@
+// Licensed under the MIT License. See LICENSE file for details.
+
 package main.java.com.samtindal.usptoconnector.handler;
 
 import com.amazonaws.services.lambda.runtime.Context;
