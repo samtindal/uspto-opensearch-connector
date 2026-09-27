@@ -22,22 +22,22 @@ The PNG embeds its draw.io source. Open [`docs/connector-request-flow.drawio.png
 ```mermaid
 sequenceDiagram
     autonumber
-    participant C as API client
+    participant C as Client
     participant G as API Gateway
     participant H as LambdaHandler
     participant A as Activity
-    participant W as OpenSearchClientWrapper
+    participant W as OpenSearch<br/>ClientWrapper
 
-    C->>G: GET /getRelatedRecordIds?query=... (SigV4-signed)
-    G->>H: APIGatewayProxyRequestEvent
-    H->>H: switch on request path
-    H->>A: execute(query or recordId)
-    A->>A: reject null or blank input
-    A->>W: executeQuery(query) or fetchDetails(recordId)
+    C->>G: signed GET
+    G->>H: proxy event
+    H->>H: route on path
+    H->>A: execute(input)
+    A->>A: validate input
+    A->>W: query or fetch
     W-->>A: simulated result
-    A-->>H: record IDs or record JSON
-    H-->>G: APIGatewayProxyResponseEvent (200)
-    G-->>C: JSON response body
+    A-->>H: IDs or record
+    H-->>G: 200 response
+    G-->>C: JSON body
 ```
 
 ### Class structure
