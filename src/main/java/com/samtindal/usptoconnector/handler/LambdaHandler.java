@@ -1,16 +1,20 @@
 // Licensed under the MIT License. See LICENSE file for details.
 
-package main.java.com.samtindal.usptoconnector.handler;
+package com.samtindal.usptoconnector.handler;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
-import main.java.com.samtindal.usptoconnector.activities.GetRecordDetailsActivity;
-import main.java.com.samtindal.usptoconnector.activities.GetRelatedRecordIdsActivity;
-import main.java.com.samtindal.usptoconnector.client.OpenSearchClientWrapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.samtindal.usptoconnector.activities.GetRecordDetailsActivity;
+import com.samtindal.usptoconnector.activities.GetRelatedRecordIdsActivity;
+import com.samtindal.usptoconnector.client.OpenSearchClientWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Map;
 
 /**
  * Main Lambda Handler for USPTO OpenSearch Connector.
@@ -19,79 +23,62 @@ import org.slf4j.LoggerFactory;
 public class LambdaHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 
     private static final Logger logger = LoggerFactory.getLogger(LambdaHandler.class);
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final Map<String, String> JSON_HEADERS = Map.of("Content-Type", "application/json");
 
-    // Activity classes
     private final GetRelatedRecordIdsActivity getRelatedRecordIdsActivity;
     private final GetRecordDetailsActivity getRecordDetailsActivity;
 
-    // Constructor
     public LambdaHandler() {
-        // Initialize activity classes and dependencies
-        OpenSearchClientWrapper openSearchClientWrapper = new OpenSearchClientWrapper();
-        this.getRelatedRecordIdsActivity = new GetRelatedRecordIdsActivity(openSearchClientWrapper);
-        this.getRecordDetailsActivity = new GetRecordDetailsActivity(openSearchClientWrapper);
+        this(new OpenSearchClientWrapper());
+    }
+
+    private LambdaHandler(OpenSearchClientWrapper openSearchClientWrapper) {
+        this(new GetRelatedRecordIdsActivity(openSearchClientWrapper),
+                new GetRecordDetailsActivity(openSearchClientWrapper));
+    }
+
+    LambdaHandler(GetRelatedRecordIdsActivity getRelatedRecordIdsActivity,
+                  GetRecordDetailsActivity getRecordDetailsActivity) {
+        this.getRelatedRecordIdsActivity = getRelatedRecordIdsActivity;
+        this.getRecordDetailsActivity = getRecordDetailsActivity;
     }
 
     @Override
     public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent request, Context context) {
-        logger.info("Received request: {}", request.getPath());
-
-        // Response object
-        APIGatewayProxyResponseEvent response = new APIGatewayProxyResponseEvent();
+        String path = request.getPath();
+        logger.info("Received request: {}", path);
 
         try {
-            String path = request.getPath();
-            switch (path) {
-                case "/getRelatedRecordIds":
-                    return handleGetRelatedRecordIds(request);
-                case "/getRecordDetails":
-                    return handleGetRecordDetails(request);
-                default:
-                    return response
-                            .withStatusCode(404)
-                            .withBody("{\"message\": \"Endpoint not found\"}");
-            }
+            return switch (path) {
+                case "/getRelatedRecordIds" -> respond(200, Map.of(
+                        "relatedRecordIds", getRelatedRecordIdsActivity.execute(queryParam(request, "query"))));
+                case "/getRecordDetails" -> respond(200,
+                        getRecordDetailsActivity.execute(queryParam(request, "recordId")));
+                case null, default -> respond(404, Map.of("message", "Endpoint not found"));
+            };
+        } catch (IllegalArgumentException e) {
+            logger.warn("Rejected request to {}: {}", path, e.getMessage());
+            return respond(400, Map.of("message", e.getMessage()));
         } catch (Exception e) {
-            logger.error("Error while processing request", e);
-            return response
-                    .withStatusCode(500)
-                    .withBody("{\"message\": \"Internal server error\"}");
+            logger.error("Error while processing request to {}", path, e);
+            return respond(500, Map.of("message", "Internal server error"));
         }
     }
 
-    private APIGatewayProxyResponseEvent handleGetRelatedRecordIds(APIGatewayProxyRequestEvent request) {
-        String query = request.getQueryStringParameters().get("query");
-        logger.info("Handling getRelatedRecordIds with query: {}", query);
-
-        var response = new APIGatewayProxyResponseEvent();
-        try {
-            var relatedIds = getRelatedRecordIdsActivity.execute(query);
-            return response
-                    .withStatusCode(200)
-                    .withBody("{\"relatedRecordIds\": " + relatedIds.toString() + "}");
-        } catch (Exception e) {
-            logger.error("Error in getRelatedRecordIdsActivity", e);
-            return response
-                    .withStatusCode(500)
-                    .withBody("{\"message\": \"Error retrieving related record IDs\"}");
-        }
+    private static String queryParam(APIGatewayProxyRequestEvent request, String name) {
+        Map<String, String> params = request.getQueryStringParameters();
+        return params == null ? null : params.get(name);
     }
 
-    private APIGatewayProxyResponseEvent handleGetRecordDetails(APIGatewayProxyRequestEvent request) {
-        String recordId = request.getQueryStringParameters().get("recordId");
-        logger.info("Handling getRecordDetails with recordId: {}", recordId);
-
-        var response = new APIGatewayProxyResponseEvent();
+    private static APIGatewayProxyResponseEvent respond(int statusCode, Object body) {
         try {
-            var recordDetails = getRecordDetailsActivity.execute(recordId);
-            return response
-                    .withStatusCode(200)
-                    .withBody(recordDetails.toString());
-        } catch (Exception e) {
-            logger.error("Error in getRecordDetailsActivity", e);
-            return response
-                    .withStatusCode(500)
-                    .withBody("{\"message\": \"Error retrieving record details\"}");
+            return new APIGatewayProxyResponseEvent()
+                    .withStatusCode(statusCode)
+                    .withHeaders(JSON_HEADERS)
+                    .withBody(MAPPER.writeValueAsString(body));
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Failed to serialize response body", e);
         }
     }
 }

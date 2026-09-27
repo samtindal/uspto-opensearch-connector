@@ -1,8 +1,9 @@
 // Licensed under the MIT License. See LICENSE file for details.
 
-package main.java.com.samtindal.usptoconnector.activities;
+package com.samtindal.usptoconnector.activities;
 
-import main.java.com.samtindal.usptoconnector.client.OpenSearchClientWrapper;
+import com.samtindal.usptoconnector.client.OpenSearchClientWrapper;
+import com.samtindal.usptoconnector.client.RecordDetails;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,9 +27,9 @@ public class GetRecordDetailsActivity {
      * Executes the activity to retrieve detailed information for the given record ID.
      *
      * @param recordId the unique record ID
-     * @return the details of the record as a string (JSON or any format)
+     * @return the details of the record
      */
-    public String execute(String recordId) {
+    public RecordDetails execute(String recordId) {
         logger.info("Executing GetRecordDetailsActivity with recordId: {}", recordId);
 
         if (recordId == null || recordId.isBlank()) {
