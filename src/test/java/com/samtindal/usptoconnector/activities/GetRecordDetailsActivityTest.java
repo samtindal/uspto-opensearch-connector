@@ -1,49 +1,39 @@
 // Licensed under the MIT License. See LICENSE file for details.
 
-package test.java.com.samtindal.usptoconnector.activities;
+package com.samtindal.usptoconnector.activities;
 
-import org.junit.jupiter.api.BeforeEach;
+import com.samtindal.usptoconnector.client.OpenSearchClientWrapper;
+import com.samtindal.usptoconnector.client.RecordDetails;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
-class GetRecordDetailsActivityTests {
+class GetRecordDetailsActivityTest {
 
-    private OpenSearchClientWrapper mockOpenSearchClientWrapper;
-    private GetRecordDetailsActivity activity;
+    private final OpenSearchClientWrapper client = mock(OpenSearchClientWrapper.class);
+    private final GetRecordDetailsActivity activity = new GetRecordDetailsActivity(client);
 
-    @BeforeEach
-    void setUp() {
-        mockOpenSearchClientWrapper = mock(OpenSearchClientWrapper.class);
-        activity = new GetRecordDetailsActivity(mockOpenSearchClientWrapper);
+    @Test
+    void returnsRecordFromClient() {
+        var record = new RecordDetails("12345", "Example Record", "Details of the record.");
+        when(client.fetchDetails("12345")).thenReturn(record);
+
+        assertEquals(record, activity.execute("12345"));
     }
 
     @Test
-    void testExecute_Success() {
-        // Arrange
-        String recordId = "12345";
-        String mockResponse = "{\"recordId\": \"12345\", \"title\": \"Example Record\"}";
-        when(mockOpenSearchClientWrapper.fetchDetails(recordId)).thenReturn(mockResponse);
-
-        // Act
-        String result = activity.execute(recordId);
-
-        // Assert
-        assertNotNull(result);
-        assertTrue(result.contains("12345"));
-        verify(mockOpenSearchClientWrapper, times(1)).fetchDetails(recordId);
-    }
-
-    @Test
-    void testExecute_NullRecordId_ThrowsException() {
-        // Act & Assert
+    void rejectsNullRecordIdWithoutCallingClient() {
         assertThrows(IllegalArgumentException.class, () -> activity.execute(null));
+        verifyNoInteractions(client);
     }
 
     @Test
-    void testExecute_BlankRecordId_ThrowsException() {
-        // Act & Assert
+    void rejectsBlankRecordIdWithoutCallingClient() {
         assertThrows(IllegalArgumentException.class, () -> activity.execute("   "));
+        verifyNoInteractions(client);
     }
 }

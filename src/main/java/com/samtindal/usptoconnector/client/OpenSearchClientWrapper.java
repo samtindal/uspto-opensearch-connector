@@ -1,6 +1,6 @@
 // Licensed under the MIT License. See LICENSE file for details.
 
-package main.java.com.samtindal.usptoconnector.client;
+package com.samtindal.usptoconnector.client;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,12 +32,12 @@ public class OpenSearchClientWrapper {
      * Fetches details for a specific record ID.
      *
      * @param recordId the unique record ID
-     * @return the record details as a string (e.g., JSON)
+     * @return the record details
      */
-    public String fetchDetails(String recordId) {
+    public RecordDetails fetchDetails(String recordId) {
         logger.info("Fetching details for record ID: {}", recordId);
 
         // Simulated API response
-        return "{\"recordId\": \"" + recordId + "\", \"title\": \"Example Record\", \"description\": \"Details of the record.\"}";
+        return new RecordDetails(recordId, "Example Record", "Details of the record.");
     }
 }

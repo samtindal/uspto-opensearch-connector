@@ -1,8 +1,8 @@
 // Licensed under the MIT License. See LICENSE file for details.
 
-package main.java.com.samtindal.usptoconnector.activities;
+package com.samtindal.usptoconnector.activities;
 
-import main.java.com.samtindal.usptoconnector.client.OpenSearchClientWrapper;
+import com.samtindal.usptoconnector.client.OpenSearchClientWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

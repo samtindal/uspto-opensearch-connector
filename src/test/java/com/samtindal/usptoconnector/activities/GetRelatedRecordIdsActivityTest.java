@@ -1,51 +1,39 @@
 // Licensed under the MIT License. See LICENSE file for details.
 
-package test.java.com.samtindal.usptoconnector.activities;
+package com.samtindal.usptoconnector.activities;
 
-import org.junit.jupiter.api.BeforeEach;
+import com.samtindal.usptoconnector.client.OpenSearchClientWrapper;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
-class GetRelatedRecordIdsActivityTests {
+class GetRelatedRecordIdsActivityTest {
 
-    private OpenSearchClientWrapper mockOpenSearchClientWrapper;
-    private GetRelatedRecordIdsActivity activity;
+    private final OpenSearchClientWrapper client = mock(OpenSearchClientWrapper.class);
+    private final GetRelatedRecordIdsActivity activity = new GetRelatedRecordIdsActivity(client);
 
-    @BeforeEach
-    void setUp() {
-        mockOpenSearchClientWrapper = mock(OpenSearchClientWrapper.class);
-        activity = new GetRelatedRecordIdsActivity(mockOpenSearchClientWrapper);
+    @Test
+    void returnsIdsFromClient() {
+        when(client.executeQuery("patent")).thenReturn(List.of("12345", "67890"));
+
+        assertEquals(List.of("12345", "67890"), activity.execute("patent"));
     }
 
     @Test
-    void testExecute_Success() {
-        // Arrange
-        String query = "patent";
-        List<String> mockResponse = List.of("12345", "67890");
-        when(mockOpenSearchClientWrapper.executeQuery(query)).thenReturn(mockResponse);
-
-        // Act
-        List<String> result = activity.execute(query);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        verify(mockOpenSearchClientWrapper, times(1)).executeQuery(query);
-    }
-
-    @Test
-    void testExecute_NullQuery_ThrowsException() {
-        // Act & Assert
+    void rejectsNullQueryWithoutCallingClient() {
         assertThrows(IllegalArgumentException.class, () -> activity.execute(null));
+        verifyNoInteractions(client);
     }
 
     @Test
-    void testExecute_BlankQuery_ThrowsException() {
-        // Act & Assert
+    void rejectsBlankQueryWithoutCallingClient() {
         assertThrows(IllegalArgumentException.class, () -> activity.execute("   "));
+        verifyNoInteractions(client);
     }
 }
