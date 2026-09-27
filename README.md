@@ -44,7 +44,7 @@ sequenceDiagram
 
 ```mermaid
 classDiagram
-    direction LR
+    direction TB
     class RequestHandler {
         <<interface>>
         +handleRequest(I input, Context context) O
