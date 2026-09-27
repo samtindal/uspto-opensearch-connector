@@ -6,6 +6,9 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import main.java.com.samtindal.usptoconnector.activities.GetRecordDetailsActivity;
+import main.java.com.samtindal.usptoconnector.activities.GetRelatedRecordIdsActivity;
+import main.java.com.samtindal.usptoconnector.client.OpenSearchClientWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
