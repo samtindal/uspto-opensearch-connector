@@ -1,121 +1,143 @@
-# USPTO OpenSearch Connector 🔍
+# USPTO OpenSearch Connector
 
-## Overview
+A read-only Java 21 AWS Lambda that serves USPTO patent records through two HTTP endpoints. Amazon API Gateway exposes it with IAM (SigV4) authorization, and the function queries an externally owned USPTO OpenSearch domain.
 
-The **USPTO OpenSearch Connector** is a read-only service designed to interface with the USPTO OpenSearch data store hosted on AWS. It simplifies querying and retrieving patent-related data using the AWS OpenSearch SDK, managing endpoint configuration and credential details within the wrapper itself. API permissions are enforced via IAM roles assumed by the calling application.
+The infrastructure lives in a separate CDK package: [`uspto-opensearch-connector-cdk`](https://github.com/samtindal/uspto-opensearch-connector-cdk). That package pulls this repository in as a git submodule and builds it into the Lambda.
 
-This client wrapper also handles pre-processing of record details retrieved from USPTO and is written in Java for its strong-typing support. The calling application is recommended to be written in Python, R, or another language for advanced data processing.
+> **Status:** the request routing, validation, and packaging work end to end. `OpenSearchClientWrapper` returns **simulated data**: it does not call OpenSearch or assume the USPTO access role yet. See [Known limitations](#known-limitations).
 
-The API methods are exposed via **Amazon API Gateway**, with compute provided by **AWS Lambda** for scalability and cost efficiency. The CDK package for deploying this service is available at:  
-[GitHub: samtindal/uspto-opensearch-connector-cdk](https://github.com/samtindal/uspto-opensearch-connector-cdk)
+## Architecture
 
----
+![Request flow: API Gateway invokes the Lambda, whose handler routes to an activity that calls the OpenSearch client wrapper](docs/connector-request-flow.drawio.png)
 
-## Features ✔️
+- **`LambdaHandler`** is the Lambda entry point. It receives the API Gateway proxy event and switches on the request path.
+- **Activity classes** each handle one endpoint. They reject null or blank input, then delegate to the client wrapper.
+- **`OpenSearchClientWrapper`** is the single place that talks to the data store, so the real OpenSearch client can replace the simulated one without touching the handler or activities.
+- **Logging** goes through SLF4J with a Logback backend to CloudWatch Logs.
 
-- **Serverless**: Fully serverless architecture powered by AWS Lambda and API Gateway.
-- **Efficient Querying**: Easy interaction with the USPTO OpenSearch API through well-defined methods.
-- **Extensible Design**: Modular activity classes for handling specific API methods.
-- **Simple Routing**: Lambda handler routes requests to the appropriate activity class based on the method invoked.
+The PNG embeds its draw.io source. Open [`docs/connector-request-flow.drawio.png`](docs/connector-request-flow.drawio.png) in [diagrams.net](https://app.diagrams.net) to edit it.
 
----
+### Request sequence
 
-## Table of Contents 📚
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Client
+    participant G as API Gateway
+    participant H as LambdaHandler
+    participant A as Activity
+    participant W as OpenSearch<br/>ClientWrapper
 
-- [Architecture](#architecture)
-- [API Endpoints](#api-endpoints)
-- [Methods](#methods)
+    C->>G: signed GET
+    G->>H: proxy event
+    H->>H: route on path
+    H->>A: execute(input)
+    A->>A: validate input
+    A->>W: query or fetch
+    W-->>A: simulated result
+    A-->>H: IDs or record
+    H-->>G: 200 response
+    G-->>C: JSON body
+```
 
----
+### Class structure
 
-## Architecture 🏗️
+```mermaid
+classDiagram
+    direction TB
+    class RequestHandler {
+        <<interface>>
+        +handleRequest(I input, Context context) O
+    }
+    class LambdaHandler {
+        -GetRelatedRecordIdsActivity getRelatedRecordIdsActivity
+        -GetRecordDetailsActivity getRecordDetailsActivity
+        +handleRequest(APIGatewayProxyRequestEvent, Context) APIGatewayProxyResponseEvent
+    }
+    class GetRelatedRecordIdsActivity {
+        -OpenSearchClientWrapper openSearchClientWrapper
+        +execute(String query) List~String~
+    }
+    class GetRecordDetailsActivity {
+        -OpenSearchClientWrapper openSearchClientWrapper
+        +execute(String recordId) String
+    }
+    class OpenSearchClientWrapper {
+        +executeQuery(String query) List~String~
+        +fetchDetails(String recordId) String
+    }
+    RequestHandler <|.. LambdaHandler
+    LambdaHandler --> GetRelatedRecordIdsActivity
+    LambdaHandler --> GetRecordDetailsActivity
+    GetRelatedRecordIdsActivity --> OpenSearchClientWrapper
+    GetRecordDetailsActivity --> OpenSearchClientWrapper
+```
 
-This application is built around the following components:
+## API
 
-1. **Lambda Handler**  
-   - The entry point for API Gateway requests.  
-   - Routes requests to the appropriate activity class based on the invoked method.
+Both endpoints are `GET` requests that need AWS SigV4 signing from a principal with `execute-api:Invoke` on the API.
 
-2. **Activity Classes**  
-   - `GetRelatedRecordIdsActivity`: Handles retrieving related record IDs using a query string.  
-   - `GetRecordDetailsActivity`: Handles fetching record details using a record ID.
+| Endpoint | Query parameter | Success response (`200`) |
+|---|---|---|
+| `/getRelatedRecordIds` | `query`: search text | `{"relatedRecordIds": [...]}` |
+| `/getRecordDetails` | `recordId`: record ID | The record as a JSON object |
 
-3. **Logging**  
-   - Uses **SLF4J** for structured and efficient logging within all components.  
-   - Logs are sent to **AWS CloudWatch** for centralized storage and monitoring.
+Error responses:
 
-4. **API Gateway**  
-   - The interface for users to interact with the Lambda function.  
-   - Routes HTTP requests to the Lambda Handler.
+| Status | Body | When |
+|---|---|---|
+| `404` | `{"message": "Endpoint not found"}` | The path is neither endpoint |
+| `500` | `{"message": "Error retrieving related record IDs"}` or `{"message": "Error retrieving record details"}` | The parameter is blank or missing, or the lookup fails |
+| `500` | `{"message": "Internal server error"}` | The request has no query string at all |
 
-5. **IAM Role-Based Access**: 
-   - API permissions are managed by IAM roles assumed by the calling application.
+## Build
 
----
+The project targets **Java 21** through a Gradle toolchain. The [Shadow plugin](https://github.com/GradleUp/shadow) builds a fat jar, which Lambda needs because none of the dependencies are on the Java runtime's classpath.
 
-## API Endpoints 🌐
+No Gradle wrapper is committed. Build with a local Gradle 8 install:
 
-1. **`GET /getRelatedRecordIds`**  
-   - **Query Parameters**:  
-     - `query` (string): The search query string to retrieve related record IDs.  
-   - **Response**:  
-     - A list of related record IDs.
+```bash
+gradle shadowJar
+```
 
-2. **`GET /getRecordDetails`**  
-   - **Query Parameters**:  
-     - `recordId` (string): The ID of the record to fetch details for.  
-   - **Response**:  
-     - The details of the specified record.
+Or build with Docker, which is how the CDK package builds it:
 
----
+```bash
+docker run --rm -u "$(id -u):$(id -g)" -e HOME=/tmp \
+  -v "$PWD":/workspace -w /workspace \
+  gradle:8-jdk21 gradle shadowJar --no-daemon
+```
 
-## Methods 🛠️
+The output is `build/libs/uspto-opensearch-connector-1.0-SNAPSHOT-all.jar`. The Lambda handler is:
 
-### 1. `getRelatedRecordIds`
+```
+main.java.com.samtindal.usptoconnector.handler.LambdaHandler
+```
 
-- **Description**: Fetches related record IDs based on the provided query string.  
-- **Input**:  
-  - Query String: `query` (e.g., "patent search term").  
-- **Output**:  
-  - A JSON object containing an array of related record IDs.  
+The package names really do start with `main.java.`, because the sources declare them that way. The handler string has to match.
 
-### 2. `getRecordDetails`
+## Deploy
 
-- **Description**: Retrieves the detailed information of a specific record using its record ID.  
-- **Input**:  
-  - Query Parameter: `recordId` (e.g., "12345").  
-- **Output**:  
-  - A JSON object with the details of the requested record.
+Deploy with [`uspto-opensearch-connector-cdk`](https://github.com/samtindal/uspto-opensearch-connector-cdk). It builds this jar during `cdk synth`, then provisions the Lambda, the IAM-authorized REST API, logging, and tracing.
 
-## Class Diagram
+## Project layout
 
-```plantuml
-@startuml
-class LambdaHandler {
-    - getRelatedIds: GetRelatedRecordIdsActivity
-    - getRecordDetails: GetRecordDetailsActivity
-}
+```
+src/main/java/com/samtindal/usptoconnector/
+├── handler/LambdaHandler.java                 # entry point; routes on request path
+├── activities/GetRelatedRecordIdsActivity.java
+├── activities/GetRecordDetailsActivity.java
+└── client/OpenSearchClientWrapper.java        # data access (simulated today)
+src/test/java/...                              # unit tests (see Known limitations)
+docs/connector-request-flow.drawio.png         # architecture diagram, editable in draw.io
+```
 
-class GetRelatedRecordIdsActivity {
-    - osClient: OpenSearchClientWrapper
-    + execute(query: String): List<String>
-}
+## Known limitations
 
-class GetRecordDetailsActivity {
-    - osClient: OpenSearchClientWrapper
-    + execute(recordId: String): UsptoRecord
-}
-
-class OpenSearchClientWrapper {
-    - executeQuery(query: String): List<String>
-    - fetchDetails(recordId: String): UsptoRecord
-}
-
-LambdaHandler --> GetRelatedRecordIdsActivity
-LambdaHandler --> GetRecordDetailsActivity
-GetRelatedRecordIdsActivity --> OpenSearchClientWrapper
-GetRecordDetailsActivity --> OpenSearchClientWrapper
-@enduml
+- **Simulated data.** `OpenSearchClientWrapper` returns fixed sample results. It does not yet call OpenSearch, and it does not assume the role in `OPENSEARCH_ROLE_ARN`, which the CDK stack passes to the function.
+- **The unit tests don't compile.** They use Mockito, which isn't a declared dependency, and their package declarations don't match the sources. As a result, `gradle test` fails, while `gradle shadowJar` works because it doesn't compile the tests.
+- **A request with no query string returns a generic `500`,** not a `400`. The handler reads the parameter map without checking for null.
 
 ## License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+MIT. See [LICENSE](LICENSE).
